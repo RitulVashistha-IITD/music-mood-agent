@@ -1,0 +1,4 @@
+google-adk
+python-multipart
+python-dotenv
+requests
