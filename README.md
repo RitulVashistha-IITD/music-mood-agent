@@ -41,9 +41,9 @@ flowchart TD
     B --> R[ADK Runner]
     R --> A[mood_agent · ADK LlmAgent]
     A --> M{FallbackLlm router}
-    M -->|1 try| G1[Groq · gpt-oss-120b]
-    M -->|on 429 / error| OR[OpenRouter · Nemotron 3 Ultra → DeepSeek V4]
-    M -->|floor| G2[Groq · gpt-oss-20b]
+    M -->|1st try| N[OpenRouter · Nemotron 3 Ultra]
+    M -->|on 429 / error| D[DeepSeek V4 Flash → Groq gpt-oss-120b]
+    M -->|floor| G[Groq · gpt-oss-20b]
     A -->|proposes songs, calls tool| T[search_songs tool]
     T --> I[iTunes Search API]
     I --> B
@@ -51,7 +51,7 @@ flowchart TD
     F --> C[Song cards: art · reason · preview · link]
 ```
 
-**One request, end to end:** the browser sends the situation to FastAPI → the ADK Runner invokes the agent → the agent reasons through the `FallbackLlm` router (trying each free model in order) → it proposes songs and calls the `search_songs` tool → the tool hits the iTunes catalog → the backend verifies the artist matches and attaches real previews/links → the frontend renders playable cards.
+**One request, end to end:** the browser sends the situation to FastAPI → the ADK Runner invokes the agent → the agent reasons through the `FallbackLlm` router (trying each free model in order, strongest first) → it proposes songs and calls the `search_songs` tool → the tool hits the iTunes catalog → the backend verifies the artist matches and attaches real previews/links → the frontend renders playable cards.
 
 ---
 
@@ -61,7 +61,7 @@ flowchart TD
 |---|---|
 | Agent framework | Google Agent Development Kit (ADK) |
 | Model routing | Custom `FallbackLlm` (subclass of ADK `BaseLlm`) + LiteLLM |
-| Models (free tiers) | Groq `gpt-oss-120b` / `gpt-oss-20b`, OpenRouter Nemotron 3 Ultra & DeepSeek V4 Flash |
+| Models (free tiers) | OpenRouter Nemotron 3 Ultra & DeepSeek V4 Flash, Groq `gpt-oss-120b` / `gpt-oss-20b` |
 | Grounding / data | Apple iTunes Search API (no key, exact links + 30s previews) |
 | Backend | FastAPI + Uvicorn |
 | Frontend | Vanilla HTML / CSS / JavaScript (no framework) |
@@ -80,7 +80,7 @@ The first version let the model both *pick* songs and *write the links* — whic
 A frontier chatbot "wins" at raw song matching partly because it's allowed to be confidently approximate — it never has to prove a track is real. This app deliberately does the harder, more useful thing, which is why verification (and honestly returning *fewer but correct* songs) matters more than clever prompting.
 
 **3. Availability vs. quality is a routing problem.**
-Running fully free means juggling providers with different quota windows (OpenRouter's ~50/day resets on a daily boundary; Groq's ~1,000/day plus a per-minute cap). The fallback router turns "which model do I use?" into a solved, automatic decision. The chain is quality-ordered but starts with the highest-throughput model during development to conserve the scarcer, higher-quality quota — a one-line switch depending on whether I'm optimizing for a demo or for iteration.
+Running fully free means juggling providers with different quota windows (OpenRouter's ~50/day resets on a daily boundary; Groq's ~1,000/day plus a per-minute cap). The fallback router turns "which model do I use?" into a solved, automatic decision. The chain is **quality-ordered** — it leads with the strongest model (Nemotron 3 Ultra) so every request gets the best available reasoning, and only falls back to faster, higher-quota models when that's exhausted. Reordering for speed/quota instead is a one-line change, depending on whether I'm optimizing for answer quality or for rapid iteration.
 
 **4. Fail like a person, not a stack trace.**
 Quota exhaustion is expected on free infra, so it's handled as a first-class path with a friendly message rather than a 500.
@@ -148,7 +148,7 @@ music-mood-agent/
 ## Limitations & honest notes
 
 - **Recommendation quality is bounded by free models.** For very niche or specific-artist requests, recall is imperfect — the agent is designed to broaden gracefully and stay honest rather than force a bad match.
-- **Free-tier quotas are real.** Heavy use in a short window can exhaust all providers for the day; the app says so plainly.
+- **Free-tier quotas are real.** Heavy use in a short window can exhaust all providers for the day; the app says so plainly. (Leading with Nemotron favors quality but spends the smaller OpenRouter quota first.)
 - **First load is slow** on Render's free tier (it sleeps when idle).
 - This is a **learning project** focused on agentic engineering, not a production service.
 
