@@ -2,4 +2,6 @@ google-adk[extensions]
 python-multipart
 python-dotenv
 requests
+fastapi
+uvicorn
 
