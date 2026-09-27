@@ -78,3 +78,37 @@ button#send{ padding:0 24px; border:none; border-radius:14px; background:var(--b
   font-family:'Nunito Sans',sans-serif; transition:background .2s ease, opacity .2s ease; }
 button#send:hover:not(:disabled){ opacity:.9; }
 button#send:disabled{ opacity:.5; cursor:default; }
+
+/* ---------- Responsive ---------- */
+
+/* Tablets and below */
+@media (max-width: 720px){
+  header{ padding:22px 16px 16px; }
+  header h1{ font-size:28px; }
+  header p{ font-size:14px; }
+  #theme-toggle{ top:16px; right:16px; width:36px; height:36px; font-size:16px; }
+  #chat{ padding:12px 14px; gap:14px; }
+  .songs-grid{ grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:12px; }
+  .user, .intro{ max-width:90%; }
+  form{ padding:12px 14px calc(12px + env(safe-area-inset-bottom)); gap:8px; }
+  input{ padding:12px 14px; font-size:16px; }   /* 16px stops iOS auto-zoom on focus */
+  button#send{ padding:0 18px; }
+}
+
+/* Phones */
+@media (max-width: 430px){
+  header h1{ font-size:24px; }
+  header p{ font-size:13px; padding:0 8px; }
+  /* two cards per row even on narrow phones — keeps the squarish grid feel */
+  .songs-grid{ grid-template-columns:repeat(2, 1fr); gap:10px; }
+  .card .title{ font-size:14px; }
+  .card .reason{ font-size:12px; }
+  .card .body{ padding:10px 11px 12px; }
+  .user, .intro{ max-width:95%; font-size:14px; }
+}
+
+/* Give the title a little breathing room from the toggle on very small screens */
+@media (max-width: 360px){
+  header h1{ font-size:22px; }
+  .songs-grid{ gap:8px; }
+}
